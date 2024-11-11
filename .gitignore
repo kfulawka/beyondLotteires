@@ -1,0 +1,9 @@
+01_model_comparison/analyses/modeling/posteriors
+01_model_comparison/analyses/modeling/diagnostics
+02_eyeTracking_study/00a_choice_dat_prep/
+02_eyeTracking_study/00b_ETpreProc/
+02_eyeTracking_study/data/
+.Rproj.user
+.Rhistory
+*.RData
+*.rds
