@@ -69,10 +69,10 @@ transformed parameters {
   vector[n] theta;
   
   // scaling
-  alp = exp(mu_alp_Phi + sigma_alp * alp_Phi);
-  gam = Phi_approx(mu_gam_Phi + sigma_gam * gam_Phi);
-  del = exp(mu_del_Phi + sigma_del * del_Phi);
-  theta = exp(mu_theta_Phi + sigma_theta * theta_Phi);
+  alp = Phi(mu_alp_Phi + sigma_alp * alp_Phi);
+  gam = Phi(mu_gam_Phi + sigma_gam * gam_Phi);
+  del = Phi(mu_del_Phi + sigma_del * del_Phi) * 10;
+  theta = Phi(mu_theta_Phi + sigma_theta * theta_Phi) * 5;
 
   // CPT
   for (j in 1:n) {
@@ -132,10 +132,10 @@ generated quantities {
   matrix[n_cp, n] log_lik;
   matrix[n_cp, n] pa;
 
-  real mu_alp = exp(mu_alp_Phi);
-  real mu_gam = Phi_approx(mu_gam_Phi);
-  real mu_del = exp(mu_del_Phi);
-  real mu_theta = exp(mu_theta_Phi);
+  real mu_alp = Phi(mu_alp_Phi);
+  real mu_gam = Phi(mu_gam_Phi);
+  real mu_del = Phi(mu_del_Phi) * 10;
+  real mu_theta = Phi(mu_theta_Phi) * 5;
   
   for (j in 1:n) {
     for( i in 1:n_cp) {

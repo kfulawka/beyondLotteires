@@ -2,13 +2,13 @@ rm(list = ls(all.names = T))
 
 library(future.apply)
 
-# # data
-# load("analyses/modeling/00_p17_mod_dat_stan.RData")
-# load("analyses/modeling/00_s16_mod_dat_stan.RData")
+# data
+load("analyses/modeling/00_p17_mod_dat_stan.RData")
+load("analyses/modeling/00_s16_mod_dat_stan.RData")
 
 # modeling results and data
-mods_pach17 = readRDS("analyses/modeling/posteriors/stan/p17_rev.rds")
-mods_sut16 = readRDS("analyses/modeling/posteriors/stan/s16_rev.rds")
+mods_pach17 = readRDS("analyses/modeling/posteriors/stan/p17_pt.rds")
+mods_sut16 = readRDS("analyses/modeling/posteriors/stan/s16_pt.rds")
 
 # function to simulate the choices
 source('analyses/modeling/functions/01_cpt_mods.R')
@@ -18,24 +18,24 @@ source('analyses/modeling/functions/01_cpt_mods.R')
 # choice simulation -------------------------------------------------------
 
 # models for simulations
-mod_sim = list(pa17_sim = mods_pach17[c('cpt_nmon_wtp', 'cpt_nmon_ar', 'cpt_nmon_adw')],
-               su16a_sim = mods_sut16[c('cpt_nmon_wtp1', 'cpt_nmon_ar1', 'cpt_nmon_adw1')],
-               su16b_sim = mods_sut16[c('cpt_nmon_wtp2', 'cpt_nmon_ar2', 'cpt_nmon_adw2')])
+mod_sim = list(pa17_sim = mods_pach17[c('cpt_nmon_adw')],
+               su16a_sim = mods_sut16[c('cpt_nmon_aw1')],
+               su16b_sim = mods_sut16[c('cpt_nmon_aw2')])
 names(mod_sim$su16a_sim) = names(mod_sim$pa17_sim)
 names(mod_sim$su16b_sim) = names(mod_sim$pa17_sim)
 
 # add simulation settings
 mod_sim = lapply(mod_sim, function(x) {
   
-  x$cpt_nmon_wtp$set = c(ar = F, apwf = F)
-  x$cpt_nmon_ar$set = c(ar = T, apwf = F)
+  # x$cpt_nmon_wtp$set = c(ar = F, apwf = F)
+  # x$cpt_nmon_ar$set = c(ar = T, apwf = F)
   x$cpt_nmon_adw$set = c(ar = T, apwf = T)
   
   return(x)
   
 })
 
-# simulate choices for each data set of interes
+# simulate choices for each data set of interest
 co_pa = lapply(mod_sim, function(dat) {
   
   # for each model of interest

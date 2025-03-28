@@ -172,7 +172,7 @@ d_s16 = list(
   
   cpt_nmon_aw1 = list(d = d_list$nmon_ar1,
                       pp = pars_set$gdt,
-                      mod = 'analyses/modeling/computational_models/stan/cpt_ar_maw.stan',
+                      mod = 'analyses/modeling/computational_models/stan/cpt_ar_aw.stan',
                       save_path = 'analyses/modeling/diagnostics/s16_cpt_nmon_aw1'),
   
   cpt_nmon_wtp2 = list(d = d_list$nmon_wtp2,
