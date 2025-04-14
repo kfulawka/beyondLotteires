@@ -1,6 +1,6 @@
 functions {
   
-  // probability weighting function
+  // probability weighting functino
   real pwf(real p, real gam, real del) {
     
     real wp;
@@ -8,22 +8,6 @@ functions {
     wp = (del*p^gam) / ( del*p^gam + (1-p)^gam ); 
     
     return wp;
-  }
-  
-  real gam_af(real g, real a) {
-    
-    real g_af = g^abs(a);
-    
-    return g_af;
-    
-  }
-  
-  real del_af(real d, real a) {
-
-    real d_af = d * abs(a);
-
-    return d_af;
-
   }
   
   // value function
@@ -34,7 +18,6 @@ functions {
     v = -1 * fabs(x)^alp ;
     
     return v;
-    
   }
 }
 
@@ -66,18 +49,15 @@ parameters {
   
   // spt individual parameters on z scale
   vector[N] gam_z;
-  vector[N] del_z;
-  matrix[N,2] theta_z;
+  vector[N] theta_z;
   
   // spt means on probit scale
   real gam_mu_phi;
-  real del_mu_phi;
-  real theta_mu_phi[2];
+  real theta_mu_phi;
   
   // spt scales on probit
   real<lower = 0> sig_gam;
-  real<lower = 0> sig_del;
-  real<lower = 0> sig_theta[2];
+  real<lower = 0> sig_theta;
 
 }
 
@@ -96,69 +76,46 @@ transformed parameters {
   vector[n] ap_sv_diff;
   vector[n] ar_sv_diff;
   
-  matrix[n, 2] gam_aw;
-  matrix[n, 2] del_aw;
-  
-  matrix[n, 2] max_o;
-  
   // id-lvl parameters for modeling
-  vector[N] gam = Phi_approx( gam_mu_phi + sig_gam * gam_z);
-  vector[N] del = exp( del_mu_phi + sig_del * del_z);
-  vector[N] theta_ap = exp( theta_mu_phi[1] + sig_theta[1] * theta_z[,1]);
-  vector[N] theta_ar = exp( theta_mu_phi[2] + sig_theta[2] * theta_z[,2]);
-  
+  vector[N] gam = Phi( gam_mu_phi + sig_gam * gam_z);
+  vector[N] theta = Phi( theta_mu_phi + sig_theta * theta_z) * 5;
+
   // for each data point with SOME search
   for(i in 1:n) {
     
     // AFFECT-POOR //////////////////////////////////////////////
-    
-    max_o[i,1] = max([fabs(xa[i,1]), fabs(xb[i,1])]) / 10;
-    
-    gam_aw[i,1] = gam_af(gam[ sub[i] ], max_o[i,1] );
-    del_aw[i,1] = del_af(del[ sub[i] ], max_o[i,1] );
       
     // A
     v_xa[i,1] = vf(xa[i,1], 1);
-
-    w_pa[i,1] = pwf(pa[i,1], gam_aw[i,1], del_aw[i,1]);
+    w_pa[i,1] = pwf(pa[i,1], gam[ sub[i] ], 1);
 
     sv_p[i,1] = v_xa[i,1] * w_pa[i,1] ;
     
     // B
     v_xb[i,1] = vf(xb[i,1], 1);
-    
-    w_pb[i,1] = pwf(pb[i,1], gam_aw[i,1], del_aw[i,1]);
+    w_pb[i,1] = pwf(pb[i,1], gam[ sub[i] ], 1);
 
     sv_p[i,2] = v_xb[i,1] * w_pb[i,1] ;
     
     // difference in favor of A
-    ap_sv_diff[i] = theta_ap[ sub[i] ] * (sv_p[i,1] - sv_p[i,2]);
+    ap_sv_diff[i] = theta[ sub[i] ] * (sv_p[i,1] - sv_p[i,2]);
     
     // AFFECT-RICH //////////////////////////////////////////////
     
-    max_o[i,2] = max([fabs(xa[i,2]), fabs(xb[i,2])]) / 10;
-    gam_aw[i,2] = gam_af(gam[ sub[i] ], max_o[i,2] );
-    del_aw[i,2] = del_af(del[ sub[i] ], max_o[i,2] );
-    
     // A
     v_xa[i,2] = vf(xa[i,2], 1);
-    
-    w_pa[i,2] = pwf(pa[i,2], gam_aw[i,2], del_aw[i,2]);
-    
+    w_pa[i,2] = pwf(pa[i,2], gam[ sub[i] ], 1);
+
     sv_r[i,1] = v_xa[i,2] * w_pa[i,2] ;
     
     // B
     v_xb[i,2] = vf(xb[i,2], 1);
-
-    w_pb[i,2] = pwf(pb[i,2], gam_aw[i,2], del_aw[i,2]);
+    w_pb[i,2] = pwf(pb[i,2], gam[ sub[i] ], 1);
 
     sv_r[i,2] = v_xb[i,2] * w_pb[i,2] ;
     
     // difference in favor of A
-    ar_sv_diff[i] = theta_ar[ sub[i] ] * (sv_r[i,1] - sv_r[i,2]);
-    
-    // difference in favor of A
-    ar_sv_diff[i] = theta_ar[ sub[i] ] * (sv_r[i,1] - sv_r[i,2]);
+    ar_sv_diff[i] = theta[ sub[i] ] * (sv_r[i,1] - sv_r[i,2]);
 
   }
   
@@ -170,13 +127,9 @@ model {
   gam_mu_phi ~ std_normal();
   to_vector(gam_z) ~ std_normal();
   sig_gam ~ normal(.5, .13);
-  
-  del_mu_phi ~ std_normal();
-  to_vector(del_z) ~ std_normal();
-  sig_del ~ normal(.5, .13);
 
   theta_mu_phi ~ std_normal();
-  to_vector(theta_z) ~ std_normal();
+  theta_z ~ std_normal();
   sig_theta ~ normal(.5, .13);
   
   // likelihood
@@ -192,13 +145,8 @@ generated quantities {
   real log_lik_ar[n];
 
   // transform the means
-  real mu_gam = Phi_approx(gam_mu_phi);
-  real mu_del = exp(del_mu_phi);
-  real mu_theta_ap = exp(theta_mu_phi[1]);
-  real mu_theta_ar = exp(theta_mu_phi[2]);
-  
-  real sig_theta_ap = sig_theta[1];
-  real sig_theta_ar = sig_theta[2];
+  real mu_gam = Phi(gam_mu_phi);
+  real mu_theta = Phi(theta_mu_phi) * 5;
   
   // log liks for elpd_loo
   for(i in 1:n) {

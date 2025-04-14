@@ -1,4 +1,4 @@
-source('analyses/modeling/functions/01_cpt_functions.R')
+source('analyses/02b_choice_modeling/functions/01_cpt_functions.R')
 
 cpt_mods_pr <- function(xy, p, a, d, g, t,
                         ar = T,
@@ -13,13 +13,13 @@ cpt_mods_pr <- function(xy, p, a, d, g, t,
     
     max_sv = max(abs(sv))/10
     
-    wp1 <- pwf_ge(p[1], g = g^max_sv, d = d * max_sv )
-    wp2 <- pwf_ge(p[2], g = g^max_sv, d = d * max_sv )
+    wp1 <- pwf_ge(p[1], g = g^max_sv, d = 1 )
+    wp2 <- pwf_ge(p[2], g = g^max_sv, d = 1 )
     wp <- cbind(wp1, wp2)
 
   } else {
     
-    wp <- pwf_ge(p, g = g, d = d)
+    wp <- pwf_ge(p, g = g, d = 1)
     
   }
   

@@ -174,27 +174,6 @@ stan_modsT1 = list(
                                  'sig_theta',
                                  'gam_r'),
                       i_pars = c('gam_ap', 'gam_ar', 'theta'))
-  
-  # cpt_dgt1 = list(m_name = 'cpt_dgt1',
-  #                 p_pars = c('mu_del','mu_gam', 'mu_theta',
-  #                            'sig_del', 'sig_gam', 'sig_theta'),
-  #                 i_pars = c('del', 'gam', 'theta')),
-  # 
-  # cpt_dgaw_t1 = list(m_name = 'cpt_dgaw_t1',
-  #                    p_pars = c('mu_del','mu_gam', 'mu_theta',
-  #                               'sig_del', 'sig_gam', 'sig_theta'),
-  #                    i_pars = c('del', 'gam', 'theta')),
-  # 
-  # cpt_vcov_dgt1 = list(m_name = 'cpt_vcov_dgt1',
-  #                      p_pars = c('mu_del_ap', 'mu_del_ar', 
-  #                                 'mu_gam_ap', 'mu_gam_ar', 
-  #                                 'mu_theta',
-  #                                 'sig_del_ap', 'sig_del_ar',
-  #                                 'sig_gam_ap', 'sig_gam_ar',
-  #                                 'sig_theta',
-  #                                 'del_r', 'gam_r'),
-  #                      i_pars = c('del_ap', 'del_ar', 'gam_ap', 
-  #                                 'gam_ar', 'theta'))
 )
 
 saveRDS(stan_modsT1, 'analyses/00c_data_analyses/stan_modsT1.rds')

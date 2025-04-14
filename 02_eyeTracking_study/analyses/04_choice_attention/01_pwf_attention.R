@@ -8,8 +8,8 @@ library(brms)
 # data --------------------------------------------------------------------
 
 # modeling results
-pt = readRDS('analyses/02b_choice_modeling/modsDG.rds')
-pt_pars = pt$cpt_vcov_dgt$pars
+pt = readRDS('analyses/02b_choice_modeling/mods_gam_phi.rds')
+pt_pars = pt$cpt_vcov_gt1$pars
 ipt = sapply(pt_pars$i_pars[c('gam_ap', 'gam_ar')], function(x) apply(x, 2, median))
 
 # dwell to p
@@ -34,56 +34,6 @@ cor.test(dd$gam[dd$cond == 'poor'], dd$y[dd$cond=='poor'], method = 'p')
 cor.test(dd$gam[dd$cond == 'rich'], dd$y[dd$cond=='rich'], method = 'p')
 
 # brms modeling -----------------------------------------------------------
-
-# dd$gam_z = scale(dd$gam)
-# dd$y_z = scale(dd$y)
-# 
-contrasts(dd$cond) = contr.sum(2)/2
-
-mod = brm(y ~ 1 + gam + (1|sub),
-          data = dd,
-          cores = 4,
-          chains = 4,
-          iter = 2000,
-          warmup = 1000,
-          thin = 2,
-          family = student())
-saveRDS(mod, 'results_figs/gam_atp.rds')
-
-# mod2 = brm(y ~ 1 + gam + cond + (1|sub),
-#           data = dd,
-#           cores = 4,
-#           chains = 4,
-#           iter = 2000,
-#           warmup = 1000,
-#           thin = 2,
-#           family = student())
-# saveRDS(mod2, 'results_figs/gam_cond_atp.rds')
-
-
-# standardized...
-dd$y_z = scale(dd$y);
-dd$gam_z = scale(dd$gam)
-
-mod_z = brm(y_z ~ 1 + gam_z + (1|sub),
-            data = dd,
-            cores = 4,
-            chains = 4,
-            iter = 2000,
-            warmup = 1000,
-            thin = 2,
-            family = student())
-saveRDS(mod_z, 'results_figs/gam_atp_z.rds')
-
-mod_Sz = brm(y_z ~ 1 + gam_z + gam_z:cond + (1|sub),
-             data = dd,
-             cores = 4,
-             chains = 4,
-             iter = 2000,
-             warmup = 1000,
-             thin = 2,
-             family = student())
-saveRDS(mod_z, 'results_figs/gam_atp_Sz.rds')
 
 # 
 m_cors = lapply(c(poor = 'poor', rich = 'rich'), function(x) {

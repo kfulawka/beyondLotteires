@@ -10,8 +10,8 @@ library(bayesplot)
 
 # sampler parameters
 n_chains = 4
-n_iter = 5e2
-n_burn = 2e2
+n_iter = 5e3
+n_burn = 2e3
 n_thin = 2
 n_cores = n_chains
 
@@ -22,7 +22,7 @@ mods = list()
 stan_data = readRDS('analyses/00c_data_analyses/stan_data.rds')
 
 # models
-stan_mods = readRDS('analyses/00c_data_analyses/stan_mods.rds')
+stan_mods = readRDS('analyses/00c_data_analyses/stan_modsT1.rds')
 
 # xa = mean(xa1, xa2) BY DEFAULT
 
@@ -37,7 +37,7 @@ stan_mods = readRDS('analyses/00c_data_analyses/stan_mods.rds')
 stan_data[c('xa1', 'xa2', 'xb1', 'xb2')] = NULL
 
 # loop
-for(i in names(stan_mods)[6]) {
+for(i in names(stan_mods)) {
   
   # parameters to monitor
   pars = c(stan_mods[[i]]$p_pars,
@@ -174,4 +174,4 @@ for(i in names(stan_mods)[6]) {
   
 }
 
-saveRDS(mods, file = 'analyses/02b_choice_modeling/modsDG.rds')
+saveRDS(mods, file = 'analyses/02b_choice_modeling_t2/mods_gam_phi.rds')

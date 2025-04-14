@@ -2,13 +2,10 @@ rm(list = ls(all.names = T))
 
 library(future.apply)
 
-# data
-load("analyses/modeling/00_p17_mod_dat_stan.RData")
-load("analyses/modeling/00_s16_mod_dat_stan.RData")
-
 # modeling results and data
 mods_pach17 = readRDS("analyses/modeling/posteriors/stan/p17_pt.rds")
 mods_sut16 = readRDS("analyses/modeling/posteriors/stan/s16_pt.rds")
+mods_pach14 = readRDS("analyses/modeling/posteriors/stan/p14_pt.rds")
 
 # function to simulate the choices
 source('analyses/modeling/functions/01_cpt_mods.R')
@@ -20,7 +17,9 @@ source('analyses/modeling/functions/01_cpt_mods.R')
 # models for simulations
 mod_sim = list(pa17_sim = mods_pach17[c('cpt_nmon_adw')],
                su16a_sim = mods_sut16[c('cpt_nmon_aw1')],
-               su16b_sim = mods_sut16[c('cpt_nmon_aw2')])
+               su16b_sim = mods_sut16[c('cpt_nmon_aw2')],
+               p14_sim = mods_pach14[c('cpt_nmon_adw')])
+# unify model names
 names(mod_sim$su16a_sim) = names(mod_sim$pa17_sim)
 names(mod_sim$su16b_sim) = names(mod_sim$pa17_sim)
 
@@ -63,17 +62,24 @@ co_pa = lapply(mod_sim, function(dat) {
       # outcome values
       xy = cbind(dd$xA[,i], dd$xB[,i])
       
-      # simulate choices of pa
-      pa = cpt_mods_pr(xy = xy,
-                       p = dd$p,
-                       a = ip[i,'alp'],
-                       g = ip[i,'gam'],
-                       d = ip[i,'del'],
-                       t = ip[i,'theta'],
-                       ar = mm$set['ar'],
-                       apwf = mm$set['apwf'],
-                       out = 'pa')
+      pa = c()
       
+      for(j in 1:nrow(xy)) {
+        
+        # simulate choices of pa
+        pa[j] = cpt_mods_pr(xy = xy[j,],
+                            p = dd$p[j,],
+                            a = ip[i,'alp'],
+                            g = ip[i,'gam'],
+                            d = ip[i,'del'],
+                            t = ip[i,'theta'],
+                            ar = mm$set['ar'],
+                            apwf = mm$set['apwf'],
+                            out = 'pa')
+      }
+      
+      return(pa)
+
     })
     
   })

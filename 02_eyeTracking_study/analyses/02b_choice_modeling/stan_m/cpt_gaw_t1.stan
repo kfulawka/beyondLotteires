@@ -18,14 +18,6 @@ functions {
     
   }
   
-  // real del_af(real d, real a) {
-  //   
-  //   real d_af = d * abs(a);
-  //   
-  //   return d_af;
-  //   
-  // }
-  
   // value function
   real vf(real x, real alp) {
     
@@ -66,15 +58,15 @@ parameters {
   
   // spt individual parameters on z scale
   vector[N] gam_z;
-  matrix[N,2] theta_z;
+  vector[N] theta_z;
   
   // spt means on probit scale
   real gam_mu_phi;
-  real theta_mu_phi[2];
+  real theta_mu_phi;
   
   // spt scales on probit
   real<lower = 0> sig_gam;
-  real<lower = 0> sig_theta[2];
+  real<lower = 0> sig_theta;
 
 }
 
@@ -97,12 +89,10 @@ transformed parameters {
   matrix[n, 2] max_o;
   
   // id-lvl parameters for modeling
-  vector[N] gam = Phi_approx( gam_mu_phi + sig_gam * gam_z);
-  vector[N] theta_ap = exp( theta_mu_phi[1] + sig_theta[1] * theta_z[,1]);
-  vector[N] theta_ar = exp( theta_mu_phi[2] + sig_theta[2] * theta_z[,2]);
-  
-  
-  
+  vector[N] gam = Phi(gam_mu_phi + sig_gam * gam_z);
+  vector[N] theta = Phi(theta_mu_phi + sig_theta * theta_z) * 5;
+
+
   // for each data point with SOME search
   for(i in 1:n) {
     
@@ -127,7 +117,7 @@ transformed parameters {
     sv_p[i,2] = v_xb[i,1] * w_pb[i,1] ;
     
     // difference in favor of A
-    ap_sv_diff[i] = theta_ap[ sub[i] ] * (sv_p[i,1] - sv_p[i,2]);
+    ap_sv_diff[i] = theta[ sub[i] ] * (sv_p[i,1] - sv_p[i,2]);
     
     // AFFECT-RICH //////////////////////////////////////////////
     
@@ -150,7 +140,7 @@ transformed parameters {
     sv_r[i,2] = v_xb[i,2] * w_pb[i,2] ;
     
     // difference in favor of A
-    ar_sv_diff[i] = theta_ar[ sub[i] ] * (sv_r[i,1] - sv_r[i,2]);
+    ar_sv_diff[i] = theta[ sub[i] ] * (sv_r[i,1] - sv_r[i,2]);
 
   }
   
@@ -180,13 +170,9 @@ generated quantities {
   real log_lik_ar[n];
 
   // transform the means
-  real mu_gam = Phi_approx(gam_mu_phi);
-  real mu_theta_ap = exp(theta_mu_phi[1]);
-  real mu_theta_ar = exp(theta_mu_phi[2]);
-  
-  real sig_theta_ap = sig_theta[1];
-  real sig_theta_ar = sig_theta[2];
-  
+  real mu_gam = Phi(gam_mu_phi);
+  real mu_theta = Phi(theta_mu_phi) * 5;
+
   // log liks for elpd_loo
   for(i in 1:n) {
     

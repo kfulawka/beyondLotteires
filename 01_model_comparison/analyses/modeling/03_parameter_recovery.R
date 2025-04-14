@@ -9,16 +9,18 @@ library(future.apply)
 
 # simulated pa (based on mean ind-lvl par values)
 pa_co_sim = readRDS("analyses/modeling/02_pa_co_sim.rds")
-names(pa_co_sim) = c('p17', 's16a', 's16b')
+names(pa_co_sim) = c('p17', 's16a', 's16b', 'p14')
 
 # data
 load("analyses/modeling/00_p17_mod_dat_stan.RData")
 load("analyses/modeling/00_s16_mod_dat_stan.RData")
+load("analyses/modeling/00_p14_mod_dat_stan.RData")
 
 #
 M = list(p17 = d_pachur2017$cpt_nmon_adw,
          s16a = d_s16$cpt_nmon_aw1,
-         s16b = d_s16$cpt_nmon_aw2)
+         s16b = d_s16$cpt_nmon_aw2,
+         p14 = d_pachur2014$cpt_nmon_adw)
 
 # no of replications
 L = 30
@@ -37,7 +39,7 @@ Ms = lapply(names(M), function(x) {
 }); names(Ms) = names(M)
 
 # clean
-rm(d_s16, d_pachur2017)
+rm(d_s16, d_pachur2017, d_pachur2014)
 
 # stan fit ----------------------------------------------------------------
 
@@ -60,7 +62,7 @@ ip_s = Ms$p17$pp$i_pars
 rec_pars = list()
 
 # loop
-for(i in names(Ms)) {
+for(i in names(Ms)[4]) {
   
   rec_pars[[i]] = list()
   
@@ -112,25 +114,27 @@ rec_pars = readRDS('analyses/modeling/posteriors/stan/rec.rds')
 # modeling results and data
 p17 = readRDS("analyses/modeling/posteriors/stan/p17_pt.rds")
 s16 = readRDS("analyses/modeling/posteriors/stan/s16_pt.rds")
+p14 = readRDS("analyses/modeling/posteriors/stan/p14_pt.rds")
 
 #
 gen_pars = list(p17 = p17$cpt_nmon_adw$pars,
                 s16a = s16$cpt_nmon_aw1$pars,
-                s16b = s16$cpt_nmon_aw2$pars)
+                s16b = s16$cpt_nmon_aw2$pars,
+                p14 = p14$cpt_nmon_adw$pars)
 
-rm(s16, p17)
+L = length(rec_pars$p17)
 
-# POP-LVL figure
+# pop-lvl fig -------------------------------------------------------------
 cairo_pdf(paste0('analyses/figures_results/figs/FigA01_parrec.pdf'),
           height = 12 * 0.393701,
           width = 16 * 0.393701,
-          pointsize = 8)
+          pointsize = 10)
 
-par(mfrow = c(3, 3),
-    mar = c(4, 3, 1, 1))
+par(mar = c(3, 2, 2, 1))
+layout(matrix(1:12, 3, 4))
 
 # pop-lvl figs
-lapply(c(p17 = 'p17', s16a = 's16a', s16b = 's16b'), function(d) {
+lapply(c(p17 = 'p17', s16a = 's16a', s16b = 's16b', p14 = 'p14'), function(d) {
   
   pn = names(gen_pars[[d]]$p_pars)
   xlims = c(1, 10, 2)
@@ -145,10 +149,13 @@ lapply(c(p17 = 'p17', s16a = 's16a', s16b = 's16b'), function(d) {
     
     # recovered dists
     r = sapply(1:L, function(l) rec_pars[[d]][[l]]$p_pars[[i]])
-    
+    #
     y = lapply(1:L, function(l) density(r[,l]) )
+    # total rec
+    y_comb = density(r)
     
-    ymax = max(c(x$y, sapply(y, function(x) max(x$y))) )
+    #
+    ymax = max(c(x$y, y_comb$y, sapply(y, function(x) max(x$y))) )
     
     plot(x, type = 'l',
          lty = 1,
@@ -162,19 +169,23 @@ lapply(c(p17 = 'p17', s16a = 's16a', s16b = 's16b'), function(d) {
          xlab = '',
          lwd = 2,
          col = rgb(.1, .1, .8, .8))
-    if(i == 1) title(ylab = d, las = 2, line = 1)
-    title(xlab = xlabs[i], line = 2.5)
+    if(i == 1) title(main = d, las = 2, line = 1)
+    title(xlab = xlabs[i], line = 2)
     
-    sapply(y, function(yy) lines(yy, lty = 1, col = rgb(.8, .1, .1, .5)) )
-    
-    if(i == 2 & d == 's16a') {
+    # rec samp
+    sapply(y, function(yy) lines(yy, lty = 1, col = rgb(.8, .1, .1, .1)) )
+    # rec tot
+    lines(y_comb, lwd = 2, col = rgb(.8, .1, .1, 1))
+    lines(x, lwd = 2, col = rgb(.1, .1, .8, 1))
+
+    if(i == 2 & d == 'p17') {
       
-      legend(0, .9 * ymax,
+      legend(.1, .9 * ymax,
              title = 'Parameter',
-             legend = c('Estimated', 'Recovered'),
+             legend = c('Generating', 'Recovered'),
              lty = 1,
-             col = c(rgb(.1, .1, .8, .8),
-                     rgb(.8, .1, .1, .5)),
+             col = c(rgb(.1, .1, .8, 1),
+                     rgb(.8, .1, .1, 1)),
              bty = 'n')
       
     }
@@ -184,64 +195,69 @@ lapply(c(p17 = 'p17', s16a = 's16a', s16b = 's16b'), function(d) {
 
 dev.off()
 
-# the id-lvl figure
-pdf('analyses/figures_results/figs/FigA02_parrec.pdf.pdf',
-    height = L * 4 * 0.393701,
-    width = 16 * 0.393701,
-    pointsize = 8)
-
-par(mfrow = c(3, 3),
-    mar = c(2, 4, 2, 1))
-
-# pop-lvl figs
-lapply(c(p17 = 'p17', s16a = 's16a', s16b = 's16b'), function(d) {
-  
-  # get gen id-lvl means
-  gip = sapply(gen_pars[[d]]$i_pars, function(x) apply(x, 2, median))
-  
-  # recovered means 
-  gr_c = lapply(1:L, function(l) {
-    
-    # get rec id-lvl means
-    rip = sapply(rec_pars[[d]][[l]]$i_pars, function(x) apply(x, 2, median))
-    
-  })
-  
-  #
-  ylims = c(1, 10, 2)
-  ylabs = c("\u03B3", "\u03B4", "\u03B8")
-  
-  # into parameter grids
-  id_rec = lapply(1:3, function(i) {
-    
-    rip = t( sapply(1:L, function(l) gr_c[[l]][,i] ) )
-    
-    # 
-    ip = gip[,i]
-    o_ip = order(ip)
-    
-    #
-    plot(rep(1:nrow(gip), each = L), rip[,o_ip],
-         col = rgb(.1, .1, .5, .1),
-         pch = 19,
-         ylim = c(ifelse(i == 2, .1, 0), ylims[i]),
-         log = ifelse(i == 2, 'y', ''),
-         xlab = '',
-         ylab = '',
-         xaxt = 'n')
-    axis(1, at = 1:nrow(gip), tick = T, labels = F)
-    title(xlab = 'individual', line = 1)
-    title(ylab = ylabs[i], line = 2.5)
-    
-    points(1:nrow(gip), ip[o_ip], 
-           col = 'orange',
-           pch = 19)
-    
-    # boxplot(rip[,o_ip],
-    #         add = T,
-    #         outline = F,
-    #         col = rgb(1,1,1,0))
-    
-  })
-
-})
+# # id-lvl ------------------------------------------------------------------
+# 
+# cairo_pdf('analyses/figures_results/figs/FigA02_parrec.pdf.pdf',
+#     height = 10 * 0.393701,
+#     width = 16 * 0.393701,
+#     pointsize = 10)
+# 
+# par(mfrow = c(3, 3),
+#     mar = c(2, 4, 2, 1))
+# 
+# # pop-lvl figs
+# lapply(c(p17 = 'p17', s16a = 's16a', s16b = 's16b'), function(d) {
+#   
+#   # get gen id-lvl means
+#   gip = sapply(gen_pars[[d]]$i_pars, function(x) apply(x, 2, median))
+#   
+#   # recovered means 
+#   gr_c = lapply(1:L, function(l) {
+#     
+#     # get rec id-lvl medians
+#     rip = sapply(rec_pars[[d]][[l]]$i_pars, function(x) apply(x, 2, median))
+#     
+#   })
+#   
+#   #
+#   ylims = c(1, 10, 2)
+#   ylabs = c("\u03B3", "\u03B4", "\u03B8")
+#   
+#   # into parameter grids
+#   id_rec = lapply(1:3, function(i) {
+#     
+#     rip = t( sapply(1:L, function(l) gr_c[[l]][,i] ) )
+#     
+#     # 
+#     ip = gip[,i]
+#     o_ip = order(ip)
+#     
+#     #
+#     plot(rep(1:nrow(gip), each = L), rip[,o_ip],
+#          col = rgb(.8, .1, .1, .1),
+#          pch = 1,
+#          ylim = c(ifelse(i == 2, .1, 0), ylims[i]),
+#          log = ifelse(i == 2, 'y', ''),
+#          xlab = '',
+#          ylab = '',
+#          main = d,
+#          xaxt = 'n')
+#     axis(1, at = 1:nrow(gip), tick = T, labels = F)
+#     title(xlab = 'individual', line = 1)
+#     title(ylab = ylabs[i], line = 2.5)
+#     
+#     # generating
+#     points(1:nrow(gip), ip[o_ip], 
+#            col = rgb(.1, .1, .8, .9),
+#            pch = 19)
+#     
+#     # average rec
+#     points(1:nrow(gip), apply(rip[,o_ip], 2, median),
+#            col = rgb(.8, .1, .1, .9),
+#            pch = 19)
+#     
+#   })
+# 
+# })
+# 
+# dev.off()

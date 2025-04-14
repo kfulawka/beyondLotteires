@@ -48,25 +48,20 @@ data {
 parameters {
   
   // spt individual parameters on z scale
-  matrix[2, N] del_z;
   matrix[2, N] gam_z;
-  matrix[2, N] theta_z;
+  vector[N] theta_z;
   
   // spt means on probit scale
-  row_vector[2] del_mu_phi;
   row_vector[2] gam_mu_phi;
-  row_vector[2] theta_mu_phi;
+  real theta_mu_phi;
   
   // spt scales on probit
-  vector<lower = 0>[2] del_sigma;
   vector<lower = 0>[2] gam_sigma;
-  vector<lower = 0>[2] theta_sigma;
+  real<lower = 0> sig_theta;
   
   // spt pars corr matrix
-  cholesky_factor_corr[2] L_del_omega;
   cholesky_factor_corr[2] L_gam_omega;
-  cholesky_factor_corr[2] L_theta_omega;
-  
+
 }
 
 transformed parameters {
@@ -85,31 +80,23 @@ transformed parameters {
   vector[n] ar_sv_diff;
   
   // parameters on wanted scale
-  vector[N] del_ap;
-  vector[N] del_ar;
   vector[N] gam_ap;
   vector[N] gam_ar;
-  vector[N] theta_ap;
-  vector[N] theta_ar;
-  
+  vector[N] theta;
+
   // individual level pars on probit scale
-  matrix[N, 2] del_phi;
   matrix[N, 2] gam_phi;
-  matrix[N, 2] theta_phi;
+  vector[N] theta_phi;
   
   // transform individual parameters
   // this makes them dependent on the multivariate normal dist
-  del_phi = (diag_pre_multiply(del_sigma, L_del_omega) * del_z)';
   gam_phi = (diag_pre_multiply(gam_sigma, L_gam_omega) * gam_z)';
-  theta_phi = (diag_pre_multiply(theta_sigma, L_theta_omega) * theta_z)';
+  theta_phi = sig_theta * theta_z;
 
-  del_ap = exp( del_mu_phi[1] + del_phi[,1] );
-  del_ar = exp( del_mu_phi[2] + del_phi[,2] );
-  gam_ap = Phi_approx( gam_mu_phi[1] + gam_phi[,1] );
-  gam_ar = Phi_approx( gam_mu_phi[2] + gam_phi[,2] );
-  theta_ap = exp( theta_mu_phi[1] + theta_phi[,1] );
-  theta_ar = exp( theta_mu_phi[2] + theta_phi[,2] );
-  
+  gam_ap = Phi( gam_mu_phi[1] + gam_phi[,1] );
+  gam_ar = Phi( gam_mu_phi[2] + gam_phi[,2] );
+  theta = Phi( theta_mu_phi + theta_phi ) * 5;
+
   // for each data point with SOME search
   for(i in 1:n) {
     
@@ -117,61 +104,50 @@ transformed parameters {
       
     // A
     v_xa[i,1] = vf(xa[i,1]);
-    w_pa[i,1] = pwf(pa[i,1], gam_ap[ sub[i] ], del_ap[ sub[i] ]);
+    w_pa[i,1] = pwf(pa[i,1], gam_ap[ sub[i] ], 1);
 
     sv_p[i,1] = v_xa[i,1] * w_pa[i,1] ;
     
     // B
     v_xb[i,1] = vf(xb[i,1]);
-    w_pb[i,1] = pwf(pb[i,1], gam_ap[ sub[i] ], del_ap[ sub[i] ]);
+    w_pb[i,1] = pwf(pb[i,1], gam_ap[ sub[i] ], 1);
 
     sv_p[i,2] = v_xb[i,1] * w_pb[i,1] ;
     
     // difference in favor of A
-    ap_sv_diff[i] = theta_ap[ sub[i] ] * (sv_p[i,1] - sv_p[i,2]);
+    ap_sv_diff[i] = theta[ sub[i] ] * (sv_p[i,1] - sv_p[i,2]);
     
     // AFFECT-RICH //////////////////////////////////////////////
     
     // A
     v_xa[i,2] = vf(xa[i,2]);
-    w_pa[i,2] = pwf(pa[i,2], gam_ar[ sub[i] ], del_ar[ sub[i] ]);
+    w_pa[i,2] = pwf(pa[i,2], gam_ar[ sub[i] ], 1);
 
     sv_r[i,1] = v_xa[i,2] * w_pa[i,2] ;
     
     // B
     v_xb[i,2] = vf(xb[i,2]);
-    w_pb[i,2] = pwf(pb[i,2], gam_ar[ sub[i] ], del_ar[ sub[i] ]);
+    w_pb[i,2] = pwf(pb[i,2], gam_ar[ sub[i] ], 1);
 
     sv_r[i,2] = v_xb[i,2] * w_pb[i,2] ;
     
     // difference in favor of A
-    ar_sv_diff[i] = theta_ar[ sub[i] ] * (sv_r[i,1] - sv_r[i,2]);
+    ar_sv_diff[i] = theta[ sub[i] ] * (sv_r[i,1] - sv_r[i,2]);
 
   }
   
 }
 
 model {
-  
-  // spt pop-level parameters
-  // del_mu_phi ~ normal(0, .5);
-  // to_vector(del_z) ~ normal(0, .5);
-  // del_sigma ~ normal(.3, .1);
-  del_mu_phi ~ std_normal();
-  to_vector(del_z) ~ std_normal();
-  del_sigma ~ normal(.5, .13);
-  L_del_omega ~ lkj_corr_cholesky(3);
-  
+
   gam_mu_phi ~ std_normal();
   to_vector(gam_z) ~ std_normal();
   gam_sigma ~ normal(.5, .13);
   L_gam_omega ~ lkj_corr_cholesky(3);
   
   theta_mu_phi ~ std_normal();
-  to_vector(theta_z) ~ std_normal();
-  theta_sigma ~ normal(.5, .13);
-  L_theta_omega ~ lkj_corr_cholesky(3);
-  
+  theta_z ~ std_normal();
+  sig_theta ~ normal(.5, .13);
   
   // likelihood
   co[,1] ~ bernoulli_logit( ap_sv_diff ); // affect poor
@@ -182,42 +158,24 @@ model {
 // logliks for loo
 generated quantities {
   
-  matrix[2,2] del_omega;
   matrix[2,2] gam_omega;
-  matrix[2,2] theta_omega;
-  real del_r;
   real gam_r;
-  real theta_r;
-  
+
   real log_lik_ap[n];
   real log_lik_ar[n];
 
   // transform the means
-  real mu_del_ap = exp(del_mu_phi[1]);
-  real mu_del_ar = exp(del_mu_phi[2]);
-  real mu_gam_ap = Phi_approx(gam_mu_phi[1]);
-  real mu_gam_ar = Phi_approx(gam_mu_phi[2]);
-  real mu_theta_ap = exp(theta_mu_phi[1]);
-  real mu_theta_ar = exp(theta_mu_phi[2]);
+  real mu_gam_ap = Phi(gam_mu_phi[1]);
+  real mu_gam_ar = Phi(gam_mu_phi[2]);
+  real mu_theta = Phi(theta_mu_phi) * 5;
 
   // get the sigmas
   real sig_gam_ap = gam_sigma[1];
   real sig_gam_ar = gam_sigma[2];
-  real sig_del_ap = del_sigma[1];
-  real sig_del_ar = del_sigma[2];
-  real sig_theta_ap = theta_sigma[1];
-  real sig_theta_ar = theta_sigma[2];
 
   // cor matrix
-  del_omega = L_del_omega * L_del_omega';
-  del_r = del_omega[1,2];
-
   gam_omega = L_gam_omega * L_gam_omega';
   gam_r = gam_omega[1,2];
-  
-  theta_omega = L_theta_omega * L_theta_omega';
-  theta_r = theta_omega[1,2];
-  
   
   // log liks for elpd_loo
   for(i in 1:n) {

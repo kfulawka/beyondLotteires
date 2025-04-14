@@ -30,25 +30,32 @@ ma_arAt = readRDS('results_figs/ma_arAt.rds')
 gam_atp = readRDS('results_figs/gam_cond_atp.rds')
 
 # cpt
-pt = readRDS('analyses/02b_choice_modeling/modsDG.rds')
-pt_pars = pt$cpt_vcov_dgt$pars
-idel = sapply(pt_pars$i_pars[1:2], function(x) apply(x, 2, median))
-igam = sapply(pt_pars$i_pars[3:4], function(x) apply(x, 2, median))
+pt = readRDS('analyses/02b_choice_modeling/mods_gam_phi.rds')
+pt_pars = pt$cpt_vcov_gt1$pars
+igam = sapply(pt_pars$i_pars[1:2], function(x) apply(x, 2, median))
 
 # POP-LVL PARAMETERS VALS AND COMPS
-pdel = sapply(pt_pars$p_pars[1:2], median)
+pgam = sapply(pt_pars$p_pars[1:2], median)
 round(sapply(pt_pars$p_pars[1:2], quantile, probs = c(.5, .025, .975)), 2)
-
-pgam = sapply(pt_pars$p_pars[3:4], median)
-round(sapply(pt_pars$p_pars[3:4], quantile, probs = c(.5, .025, .975)), 2)
-
-del_d = pt_pars$p_pars$mu_del_ap  - pt_pars$p_pars$mu_del_ar
-del_d = round( quantile(del_d, c(.5, .025, .975)), 2)
 
 gam_d = pt_pars$p_pars$mu_gam_ap  - pt_pars$p_pars$mu_gam_ar
 gam_d = round( quantile(gam_d, c(.5, .025, .975)), 2)
 
 N = length(unique(dd$sub))
+
+
+# model performance comp --------------------------------------------------
+
+sapply(pt, function(x) x$perf$ba$ba)
+ll = lapply(pt, function(x) x$perf$looE)
+
+# APW v AV
+r = loo_compare(ll[1:2])
+r[2] + r[4] * c(-1.96, 1.96) 
+
+# 2PWF v AV
+r = loo_compare(ll[c(1,3)])
+r[2] + r[4] * c(-1.96, 1.96) 
 
 # plot set up -------------------------------------------------------------
 cc = c(rgb(.1, 0, .7, .2), 
@@ -57,23 +64,21 @@ cc_p = c(rgb(.1, 0, .7, .8),
          rgb(.7, 0, .1, .8))
 
 pdf('results_figs/figs/Fig07.pdf',
-    height = 6 * 0.393701,
+    height = 5.5 * 0.393701,
     width = 16 * 0.393701,
     pointsize = 9)
 
-par(mar = c(4, 4, 4, 1))
-
-layout(matrix(c(1, 1, 2, 3, 4, 4), 2, 3))
+par(mar = c(4, 4, 4, 1),
+    mfrow = c(1, 3))
 
 # PWFs --------------------------------------------------------------------
 
 pwf = function(x, g, d = 1) d*x^g / (d*x^g + (1-x)^g) 
 
-
 for(j in 1:2) {
   for(i in 1:N) {
   
-    curve(pwf(x, g = igam[i,j], d = idel[i,j]),
+    curve(pwf(x, g = igam[i,j], d = 1),
           from = .004, to = .1,
           n = 5e2,
           col = cc[j],
@@ -87,7 +92,7 @@ for(j in 1:2) {
     
   }
   
-  curve(pwf(x, g = pgam[j], d = pdel[j]),
+  curve(pwf(x, g = pgam[j], d = 1),
         from = .004, to = .1,
         n = 5e2,
         col = cc_p[j],
@@ -125,8 +130,6 @@ mtext('a',
 
 # pwfs box ----------------------------------------------------------------
 
-par(mar = c(1.2, 4, 4, 1))
-
 # exp manipulation
 paired_boxplot(igam,
                box_col = cc,
@@ -134,11 +137,11 @@ paired_boxplot(igam,
                              rgb(.5, 0, 0, .2)),
                line_col = rgb(.5, 0, .5, .1),
                yl = expression(gamma['ind']),
-               # xl = 'Condition',
+               xl = 'Condition',
                ylim = c(0, 1),
-               # title = 'Probability sensitivity',
-               title = 'PWF parameter differences',
-               x_labs = c('', ''))
+               title = 'Probability sensitivity',
+               # title = 'PWF parameter differences',
+               x_labs = c('Affect-poor', 'Affect-rich'))
 print(gam_d)
 title(main = expression(Delta[gamma]=='0.48, 95%CI: [0.33, 0.61]'),
       font.main = 1, cex.main = 1,
@@ -151,34 +154,8 @@ mtext('b',
       col = 'black',
       font = 2)
 
-par(mar = c(4, 4, 1.2, 1))
-
-# exp manipulation
-paired_boxplot(idel,
-               box_col = cc,
-               point_col = c(rgb(0, 0, .5, .2),
-                             rgb(.5, 0, 0, .2)),
-               line_col = rgb(.5, 0, .5, .1),
-               yl = expression(delta['ind']),
-               xl = 'Condition',
-               ylim = c(0, 3),
-               # title = 'Elevation/Pessimism',
-               x_labs = c('Affect-poor', 'Affect-rich'))
-print(del_d)
-title(main = expression(Delta[delta]=='-0.94, 95%CI: [-5.67, 1.07]'),
-      font.main = 1, cex.main = 1,
-      line = .7)
-
-# mtext('c',
-#       side = 3,
-#       line = 1,
-#       adj = -.2,
-#       col = 'black',
-#       font = 2)
 
 # risky drug choice -------------------------------------------------------
-
-par(mar = c(4, 4, 4, 1))
 
 paired_boxplot(co_m,
                box_col = cc,
