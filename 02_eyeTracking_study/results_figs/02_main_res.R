@@ -143,7 +143,7 @@ paired_boxplot(igam,
                # title = 'PWF parameter differences',
                x_labs = c('Affect-poor', 'Affect-rich'))
 print(gam_d)
-title(main = expression(Delta[gamma]=='0.48, 95%CI: [0.33, 0.61]'),
+title(main = expression(Delta[gamma]=='0.22, 95%CI: [0.15, 0.30]'),
       font.main = 1, cex.main = 1,
       line = .7)
 
