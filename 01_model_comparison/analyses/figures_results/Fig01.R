@@ -110,8 +110,8 @@ mtext('a',
 # Panel B: PWF ------------------------------------------------------------
 
 # example parameters
-gd = list( a = c(.2, 3), b = c(.4, .8), c = c(.9, 1))
-pc = viridis::viridis(3, .7)
+gd = list( a = c(.2, 2), b = c(.2, .8), c = c(.8, 2), d = c(.8, .8))
+pc = viridis::viridis(4, .7)
 
 # PWF
 GE <-function(x, gam, del) del*x^gam / ( del*x^gam + (1-x)^gam )
@@ -162,7 +162,7 @@ for(i in 1:length(gd)) {
 }
 
 # legend
-legend(.5, .4,
+legend(.5, .45,
        legend = unlist(lapply(gd, paste, collapse = ' & ')),
        title = '\u03B3 & \u03B4',
        bty = 'n',
